@@ -3,6 +3,7 @@ package controller
 import (
 	"Crud-Echo-Gorm/configuration"
 	"Crud-Echo-Gorm/model"
+	"Crud-Echo-Gorm/rest"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
@@ -33,11 +34,8 @@ func CreateUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, data)
 
 	}
-	response := map[string]interface{}{
-		"data": user,
-	}
 
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(http.StatusOK, rest.UserCreateResponse{Message: "user created successfully", User: *user})
 }
 
 func UpdateUser(c echo.Context) error {
@@ -52,8 +50,8 @@ func UpdateUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, data)
 	}
 
-	existing_user := new(model.User)
-	if err := db.First(&existing_user, id).Error; err != nil {
+	existingUser := new(model.User)
+	if err := db.First(&existingUser, id).Error; err != nil {
 		data := map[string]interface{}{
 			"message": err.Error(),
 		}
@@ -61,12 +59,12 @@ func UpdateUser(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, data)
 	}
 
-	existing_user.Name = u.Name
-	existing_user.LastName = u.LastName
-	existing_user.Email = u.Email
-	existing_user.Age = u.Age
+	existingUser.Name = u.Name
+	existingUser.LastName = u.LastName
+	existingUser.Email = u.Email
+	existingUser.Age = u.Age
 
-	if err := db.Save(&existing_user).Error; err != nil {
+	if err := db.Save(&existingUser).Error; err != nil {
 		data := map[string]interface{}{
 			"message": err.Error(),
 		}
@@ -74,7 +72,7 @@ func UpdateUser(c echo.Context) error {
 	}
 
 	response := map[string]interface{}{
-		"data": existing_user,
+		"data": existingUser,
 	}
 
 	return c.JSON(http.StatusOK, response)
@@ -97,7 +95,7 @@ func DeleteUserById(c echo.Context) error {
 		}
 		return c.JSON(http.StatusInternalServerError, data)
 	}
-	return c.JSON(http.StatusOK, "deleted")
+	return c.JSON(http.StatusOK, rest.UserDeleteResponse{Message: "User delete"})
 }
 func GetUserById(c echo.Context) error {
 	id := c.Param("id")
@@ -113,12 +111,15 @@ func GetUserById(c echo.Context) error {
 }
 func GetAllUsers(c echo.Context) error {
 	db := configuration.DB()
-	users := []model.User{}
+	var users []model.User
 	if err := db.Find(&users).Error; err != nil {
 		data := map[string]interface{}{
 			"message": err.Error(),
 		}
-		c.JSON(http.StatusInternalServerError, data)
+		err := c.JSON(http.StatusInternalServerError, data)
+		if err != nil {
+			return err
+		}
 	}
 	return c.JSON(http.StatusOK, users)
 }
